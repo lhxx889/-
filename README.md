@@ -1,5 +1,5 @@
 # 小白用户超级简易使用指南
-我理解您需要一个可以直接从GitHub远程下载并自动解压安装的命令。以下是一个简单的一行命令，可以直接从GitHub下载、解压并运行安装脚本：curl -sSL https://raw.githubusercontent.com/用户名/crypto_monitor/main/super_easy_install.sh | bash
+我理解您需要一个可以直接从GitHub远程下载并自动解压安装的命令。以下是一个简单的一行命令，可以直接从GitHub下载、解压并运行安装脚本：curl -sSL https://raw.githubusercontent.com/lhxx889/-/refs/heads/main/super_easy_install.sh | bash
 ## 一、安装步骤（只需一次）
 
 ### 方法一：复制粘贴一行命令（最简单）
