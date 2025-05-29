@@ -1,39 +1,106 @@
 #!/bin/bash
 
-echo "🚀 开始安装 Gate.io 异动监控系统..."
+set -e
 
-# 安装 Python3 和 pip（适用于 Debian/Ubuntu/CentOS）
-if ! command -v python3 &> /dev/null; then
-    echo "🔧 安装 Python3..."
-    if [ -f /etc/debian_version ]; then
-        sudo apt update && sudo apt install -y python3 python3-pip
-    elif [ -f /etc/redhat-release ]; then
-        sudo yum install -y python3 python3-pip
-    fi
-fi
+PROJECT_DIR=$(pwd)
 
-# 创建 logs 文件夹
-mkdir -p logs
+echo "📦 [1/5] 正在安装 Python 依赖..."
+pip3 install -r requirements.txt
 
-# 创建虚拟环境（可选）
-python3 -m venv venv
-source venv/bin/activate
+echo "🗃 [2/5] 正在初始化数据库..."
+python3 src/init_db.py || echo "跳过初始化，可能已经存在。"
 
-# 安装依赖
-echo "📦 安装依赖包..."
-venv/bin/pip install --upgrade pip
-venv/bin/pip install -r requirements.txt
+echo "🔒 [3/5] 创建日志与数据目录..."
+mkdir -p logs data
 
-# 初始化数据库
-echo "🗂 初始化数据库..."
-venv/bin/python init_db.py
+cat <<EOF > gateio-monitor.service
+[Unit]
+Description=Gate.io Monitor Service
+After=network.target
 
-# 启动监控程序（后台）
-echo "🔍 启动监控程序..."
-nohup venv/bin/python monitor.py > logs/monitor_stdout.log 2>&1 &
+[Service]
+WorkingDirectory=$PROJECT_DIR
+ExecStart=/usr/bin/gunicorn -c gunicorn_config.py web.app:app
+Restart=always
+User=www-data
+Group=www-data
 
-# 启动 Web 面板
-echo "🌐 启动 Web 面板 http://localhost:8080 ..."
-nohup venv/bin/uvicorn web_server:app --host 0.0.0.0 --port 8080 > logs/web_stdout.log 2>&1 &
+[Install]
+WantedBy=multi-user.target
+EOF
 
-echo "✅ 安装完成！请在浏览器中访问 http://localhost:8080"
+cat <<EOF > gunicorn_config.py
+bind = '0.0.0.0:8000'
+workers = 3
+timeout = 120
+loglevel = 'info'
+accesslog = 'logs/access.log'
+errorlog = 'logs/error.log'
+EOF
+
+cat <<EOF > nginx.conf
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+EOF
+
+cat <<EOF > README.md
+# Gate.io 异动监控系统
+
+## 📦 安装步骤
+```bash
+bash install.sh
+```
+
+## 🖥 功能概览
+- 实时监控币种价格波动
+- 支持筛选 + 自动刷新图表
+- Telegram 通知配置
+- WebSocket 实时日志
+
+## 📂 项目结构说明
+- `web/`：前端页面 + Flask API
+- `src/`：主监控逻辑 + 通知发送
+- `data/`：SQLite 数据库存储
+- `logs/`：运行日志（含 monitor.log）
+
+## 🔧 部署建议
+1. **Systemd 守护进程**
+```bash
+sudo cp gateio-monitor.service /etc/systemd/system/
+sudo systemctl daemon-reexec
+sudo systemctl enable gateio-monitor
+sudo systemctl start gateio-monitor
+```
+
+2. **Nginx 配置参考**（已生成 nginx.conf）
+
+## 🧪 本地调试
+```bash
+bash run_web.sh
+```
+默认监听 http://localhost:8000
+
+## 🤖 Telegram 设置
+在前端设置 Telegram Token 与 Chat ID，即可接收通知。
+
+## ❓ 常见问题
+- Web 页面打不开？检查端口/防火墙/Nginx 配置
+- 无法收到通知？确认 token 与 chat_id 是否正确
+
+## 📷 示例截图
+（你可以补充界面截图）
+
+EOF
+
+echo "📚 [5/5] 已生成部署配置与说明文档。"
+echo "✅ 安装完成！请访问 http://localhost:8000 查看系统。"
