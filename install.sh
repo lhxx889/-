@@ -12,28 +12,32 @@ if ! command -v python3 &> /dev/null; then
     fi
 fi
 
+# 使用 python3 明确指定，不再依赖 python 命令
+PYTHON=python3
+PIP=pip3
+
+# 创建 logs 文件夹
+mkdir -p logs
+
 # 创建虚拟环境（可选）
-python3 -m venv venv
+$PYTHON -m venv venv
 source venv/bin/activate
 
 # 安装依赖
 echo "📦 安装依赖包..."
-pip install --upgrade pip
-pip install -r requirements.txt
+$PIP install --upgrade pip
+$PIP install -r requirements.txt
 
 # 初始化数据库
 echo "🗂 初始化数据库..."
-python init_db.py
-
-# 确保日志目录存在
-mkdir -p logs
+$PYTHON init_db.py
 
 # 启动监控程序（后台）
 echo "🔍 启动监控程序..."
-nohup python monitor.py > logs/monitor_stdout.log 2>&1 &
+nohup $PYTHON monitor.py > logs/monitor_stdout.log 2>&1 &
 
 # 启动 Web 面板
 echo "🌐 启动 Web 面板 http://localhost:8080 ..."
-nohup uvicorn web_server:app --host 0.0.0.0 --port 8080 > logs/web_stdout.log 2>&1 &
+nohup venv/bin/uvicorn web_server:app --host 0.0.0.0 --port 8080 > logs/web_stdout.log 2>&1 &
 
 echo "✅ 安装完成！请在浏览器中访问 http://localhost:8080"
