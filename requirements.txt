@@ -3,5 +3,4 @@ uvicorn
 aiohttp
 python-telegram-bot
 jinja2
-python-multipart
-websockets
+# sqlite3 ← 这行删掉或注释掉
