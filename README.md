@@ -1,1 +1,0 @@
-使用步骤简要说明：1.下载并解压gate_crypto_monitor.zip2.进入gate_crypto_monitor目录3.执行chmod +x install.sh赋予安装脚本执行权限4.执行./install.sh安装所有依赖5.编辑config.yaml文件，配置Telegram和邮箱推送信息6.执行./start.sh --start启动监控如果您有任何问题或需要进一步的帮助，请随时告诉我！
